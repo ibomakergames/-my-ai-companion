@@ -118,12 +118,15 @@ button {
 </footer>
 
 <script>
-function sendMessage() {
+const messages = [];
+
+async function sendMessage() {
   const input = document.getElementById("message");
   const chat = document.getElementById("chat");
+  const button = document.querySelector("footer button");
   const value = input.value.trim();
 
-  if (!value) return;
+  if (!value || button.disabled) return;
 
   document.getElementById("welcome")?.remove();
 
@@ -132,13 +135,36 @@ function sendMessage() {
   bubble.textContent = value;
   chat.appendChild(bubble);
 
-  const reply = document.createElement("div");
-  reply.className = "message assistant";
-  reply.textContent = "وصلت رسالتك. سنربط ذكائي الاصطناعي في الخطوة القادمة.";
-  chat.appendChild(reply);
-
+  messages.push({ role: "user", content: value });
   input.value = "";
-  chat.scrollTop = chat.scrollHeight;
+  button.disabled = true;
+  button.textContent = "…";
+
+  const waiting = document.createElement("div");
+  waiting.className = "message assistant";
+  waiting.textContent = "ليلى تكتب الآن...";
+  chat.appendChild(waiting);
+
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error("Error");
+
+    waiting.textContent = data.reply || "لم يصلني رد.";
+    messages.push({ role: "assistant", content: waiting.textContent });
+  } catch (error) {
+    waiting.textContent = "حدث خطأ في الاتصال. حاول مرة أخرى.";
+    messages.pop();
+  } finally {
+    button.disabled = false;
+    button.textContent = "إرسال";
+    chat.scrollTop = chat.scrollHeight;
+  }
 }
 
 document.getElementById("message").addEventListener("keydown", function(e) {
