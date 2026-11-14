@@ -118,6 +118,7 @@ button {
 </footer>
 
 <script>
+
 const messages = [];
 
 async function sendMessage() {
@@ -153,13 +154,21 @@ async function sendMessage() {
     });
 
     const data = await response.json();
-    if (!response.ok) throw new Error("Error");
+
+    if (!response.ok) {
+      throw new Error(data.error || "خطأ غير معروف");
+    }
 
     waiting.textContent = data.reply || "لم يصلني رد.";
-    messages.push({ role: "assistant", content: waiting.textContent });
+    messages.push({
+      role: "assistant",
+      content: waiting.textContent
+    });
+
   } catch (error) {
-    waiting.textContent = "حدث خطأ في الاتصال. حاول مرة أخرى.";
+    waiting.textContent = error.message;
     messages.pop();
+
   } finally {
     button.disabled = false;
     button.textContent = "إرسال";
@@ -173,6 +182,7 @@ document.getElementById("message").addEventListener("keydown", function(e) {
     sendMessage();
   }
 });
+  
 </script>
 
 </body>
